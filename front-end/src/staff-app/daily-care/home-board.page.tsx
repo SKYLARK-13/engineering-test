@@ -15,11 +15,36 @@ import {useAppState} from "StateProvider"
 export const HomeBoardPage: React.FC = () => {
   const [isRollMode, setIsRollMode] = useState(false)
   const [getStudents, data, loadState] = useApi<{ students: Person[] }>({ url: "get-homeboard-students" })
-  const { filterType, sortType, searchText } = useAppState()
+  const { filterType, sortType, searchText,setRollStateArr, rollStateArr, filterBy, setFilterBy } = useAppState()
+  const [rollSummary, setRollSummary] = useState({ all: 0, present: 0, late: 0, absent: 0 })
   useEffect(() => {
     void getStudents()
   }, [getStudents])
 
+   useEffect(() => {
+    if (isRollMode) {
+      const rollArray = []
+      if (data?.students) {
+        for (const student of data.students) {
+          rollArray.push({ student_id: student.id, roll_state: "unmark" })
+        }
+      }
+      setRollStateArr(rollArray)
+    } else {
+      const rollArray: any = []
+      setRollStateArr(rollArray)
+    }
+  }, [isRollMode])
+
+  useEffect(() => {
+    const calcRollSummary = {
+      all: rollStateArr.length,
+      present: rollStateArr.filter((student: any) => student.roll_state === "present").length,
+      late: rollStateArr.filter((student: any) => student.roll_state === "late").length,
+      absent: rollStateArr.filter((student: any) => student.roll_state === "absent").length,
+    }
+    setRollSummary(calcRollSummary)
+  }, [rollStateArr])
   const onToolbarAction = (action: ToolbarAction) => {
     if (action === "roll") {
       setIsRollMode(true)
@@ -57,8 +82,28 @@ export const HomeBoardPage: React.FC = () => {
                   return true
                 }
                 return false
-              }).map((s) => (
-              <StudentListTile key={s.id} isRollMode={isRollMode} student={s} />
+              }).filter((item) => {
+                if (isRollMode) {
+                  const studentRollState: any = rollStateArr?.find((studentRoll: any) => studentRoll.student_id === item.id)
+                  if (studentRollState?.roll_state === filterBy) {
+                    console.log(filterBy)
+                    return true
+                  } else if (filterBy === "all") {
+                    return true
+                  } else {
+                    return false
+                  }
+                } else {
+                  return true
+                }
+              }).map((s:any) => 
+              (
+              <StudentListTile
+                  key={s.id}
+                  isRollMode={isRollMode}
+                  student={s}
+                  initialState={(rollStateArr as any)?.find((studentRollState: any) => studentRollState.student_id === s.id)?.roll_state}
+                ></StudentListTile>
             ))}
           </>
         )}
@@ -69,7 +114,7 @@ export const HomeBoardPage: React.FC = () => {
           </CenteredContainer>
         )}
       </S.PageContainer>
-      <ActiveRollOverlay isActive={isRollMode} onItemClick={onActiveRollAction} />
+      <ActiveRollOverlay isActive={isRollMode} onItemClick={onActiveRollAction} rollSummary={rollSummary} />
     </>
   )
 }
