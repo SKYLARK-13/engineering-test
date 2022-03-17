@@ -1,14 +1,18 @@
-import React, { useState } from "react"
+import React, { useState,useEffect } from "react"
 import { RolllStateType } from "shared/models/roll"
 import { RollStateIcon } from "staff-app/components/roll-state/roll-state-icon.component"
-
+import { useAppState } from "StateProvider"
 interface Props {
   initialState?: RolllStateType
   size?: number
   onStateChange?: (newState: RolllStateType) => void
+  id:any
+  changeStudentRollState: (id: number, newState: RolllStateType) => void
+  studentId: number
 }
-export const RollStateSwitcher: React.FC<Props> = ({ initialState = "unmark", size = 40, onStateChange }) => {
+export const RollStateSwitcher: React.FC<Props> = ({ initialState = "unmark", size = 40, onStateChange, id,changeStudentRollState, studentId }) => {
   const [rollState, setRollState] = useState(initialState)
+  const { setRollStateArr } = useAppState()
 
   const nextState = () => {
     const states: RolllStateType[] = ["present", "late", "absent"]
@@ -20,9 +24,28 @@ export const RollStateSwitcher: React.FC<Props> = ({ initialState = "unmark", si
   const onClick = () => {
     const next = nextState()
     setRollState(next)
+    updateRollState(next)
     if (onStateChange) {
       onStateChange(next)
     }
+    changeStudentRollState(studentId, next)
+  }
+
+  const updateRollState = (next: any) => {
+    setRollStateArr((prevRoll: any) => {
+      let result: any = []
+      for (let i = 0; i < prevRoll.length; i++) {
+        if (prevRoll[i].student_id === id) {
+          result.push({
+            student_id: prevRoll[i].student_id,
+            roll_state: next,
+          })
+        } else {
+          result.push(prevRoll[i])
+        }
+      }
+      return result
+    })
   }
 
   return <RollStateIcon type={rollState} size={size} onClick={onClick} />

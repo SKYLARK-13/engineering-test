@@ -1,18 +1,23 @@
-import React from "react"
+import React,{ useState} from "react"
 import styled from "styled-components"
 import Button from "@material-ui/core/Button"
 import { BorderRadius, Spacing } from "shared/styles/styles"
 import { RollStateList } from "staff-app/components/roll-state/roll-state-list.component"
-
+import { ItemType } from "staff-app/components/roll-state/roll-state-list.component"
+import { RolllStateType } from "shared/models/roll"
 export type ActiveRollAction = "filter" | "exit"
 interface Props {
   isActive: boolean
   onItemClick: (action: ActiveRollAction, value?: string) => void
+  rollSummary:any
+    onFilterClick: (type: ItemType) => void
 }
 
 export const ActiveRollOverlay: React.FC<Props> = (props) => {
-  const { isActive, onItemClick } = props
-
+  const { isActive, onItemClick, rollSummary,onFilterClick } = props
+  const onItemClickWithActionFilter = (value: string = "") => {
+    onItemClick("filter", value)
+  }
   return (
     <S.Overlay isActive={isActive}>
       <S.Content>
@@ -20,11 +25,12 @@ export const ActiveRollOverlay: React.FC<Props> = (props) => {
         <div>
           <RollStateList
             stateList={[
-              { type: "all", count: 0 },
-              { type: "present", count: 0 },
-              { type: "late", count: 0 },
-              { type: "absent", count: 0 },
+              { type: "all", count: rollSummary.all },
+              { type: "present", count: rollSummary.present },
+              { type: "late", count: rollSummary.late },
+              { type: "absent", count: rollSummary.absent },
             ]}
+            onItemClick={onFilterClick}
           />
           <div style={{ marginTop: Spacing.u6 }}>
             <Button color="inherit" onClick={() => onItemClick("exit")}>
