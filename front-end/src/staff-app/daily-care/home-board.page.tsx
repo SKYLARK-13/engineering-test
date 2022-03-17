@@ -10,6 +10,8 @@ import { Person } from "shared/models/person"
 import { useApi } from "shared/hooks/use-api"
 import { StudentListTile } from "staff-app/components/student-list-tile/student-list-tile.component"
 import { ActiveRollOverlay, ActiveRollAction } from "staff-app/components/active-roll-overlay/active-roll-overlay.component"
+import { ItemType } from "staff-app/components/roll-state/roll-state-list.component"
+import { RolllStateType } from "shared/models/roll"
 import { Switch } from "@material-ui/core"
 import {useAppState} from "StateProvider"
 export const HomeBoardPage: React.FC = () => {
@@ -17,9 +19,15 @@ export const HomeBoardPage: React.FC = () => {
   const [getStudents, data, loadState] = useApi<{ students: Person[] }>({ url: "get-homeboard-students" })
   const { filterType, sortType, searchText,setRollStateArr, rollStateArr, filterBy, setFilterBy } = useAppState()
   const [rollSummary, setRollSummary] = useState({ all: 0, present: 0, late: 0, absent: 0 })
+  const [studentsInState, setStudentsInState] = useState(data?.students.slice())
+    const [filterRollState, setFilterRollState] = useState("")
   useEffect(() => {
     void getStudents()
   }, [getStudents])
+
+  useEffect(() => {
+    setStudentsInState(data?.students.slice())
+  }, [data])
 
    useEffect(() => {
     if (isRollMode) {
@@ -57,6 +65,25 @@ export const HomeBoardPage: React.FC = () => {
     }
   }
 
+  const handleFilterRollState = (rollType: ItemType) => {
+    setFilterRollState(rollType)
+  }
+
+  const setStudentRollState = (id: number, newState: RolllStateType) => {
+    let index = studentsInState?.findIndex((s) => s.id === id)
+    console.log("index is " + index)
+    if (index !== undefined) {
+      let newStudents = studentsInState?.slice()
+      console.log("studentInState: " + studentsInState)
+      console.log("newStudenta: " + newStudents)
+      if (newStudents) {
+        console.log("setting students state: " + newState + ", id: " + id)
+        newStudents[index].roll_state = newState
+        setStudentsInState(newStudents)
+      }
+    }
+  }
+
   return (
     <>
       <S.PageContainer>
@@ -68,9 +95,9 @@ export const HomeBoardPage: React.FC = () => {
           </CenteredContainer>
         )}
 
-        {loadState === "loaded" && data?.students && (
+        {loadState === "loaded" && studentsInState && (
           <>
-            {data.students
+            {studentsInState
               .sort((a, b) => {
                 if (sortType === "asc" && (filterType === "first_name" || filterType === "last_name")) {
                   return a[filterType].toUpperCase() > b[filterType].toUpperCase() ? 1 : -1
@@ -96,6 +123,9 @@ export const HomeBoardPage: React.FC = () => {
                 } else {
                   return true
                 }
+              }) .filter((person) => {
+                console.log("persion statte: " + person.roll_state + ", filter state: " + filterRollState)
+                return filterRollState === "" || person.roll_state === filterRollState
               }).map((s:any) => 
               (
               <StudentListTile
@@ -103,6 +133,7 @@ export const HomeBoardPage: React.FC = () => {
                   isRollMode={isRollMode}
                   student={s}
                   initialState={(rollStateArr as any)?.find((studentRollState: any) => studentRollState.student_id === s.id)?.roll_state}
+                changeStudentRollState={setStudentRollState}
                 ></StudentListTile>
             ))}
           </>
@@ -114,7 +145,7 @@ export const HomeBoardPage: React.FC = () => {
           </CenteredContainer>
         )}
       </S.PageContainer>
-      <ActiveRollOverlay isActive={isRollMode} onItemClick={onActiveRollAction} rollSummary={rollSummary} />
+      <ActiveRollOverlay isActive={isRollMode} onItemClick={onActiveRollAction} rollSummary={rollSummary} onFilterClick={handleFilterRollState} />
     </>
   )
 }
